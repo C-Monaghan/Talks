@@ -37,6 +37,10 @@ covariates <- c(
   "ID", "Gender", "Age", "Education_tri", "Total_dep_2016", "Total_p")
 ```
 
+## Follow along
+
+![](./files/images/multiplex.svg){fig-align="center" width="450" height="450"}
+
 ## Plan for today
 
 -   Linking procrastination to dementia
