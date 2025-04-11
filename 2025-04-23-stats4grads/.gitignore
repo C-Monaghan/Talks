@@ -1,0 +1,21 @@
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+.RDataTmp
+
+# User-specific files
+.Ruserdata
+
+# RStudio files
+.Rproj.user/
+
+# Quarto
+/.quarto/
+
+# User specific files
+data/
+R/
+master-slides.html

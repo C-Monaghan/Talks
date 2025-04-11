@@ -1,0 +1,16 @@
+Version: 1.0
+ProjectId: 8e115850-7dc3-4eac-b494-42f21e42a365
+
+RestoreWorkspace: Default
+SaveWorkspace: Default
+AlwaysSaveHistory: Default
+
+EnableCodeIndexing: Yes
+UseSpacesForTab: Yes
+NumSpacesForTab: 2
+Encoding: UTF-8
+
+RnwWeave: Sweave
+LaTeX: pdfLaTeX
+
+ProjectName: stats-4-grads

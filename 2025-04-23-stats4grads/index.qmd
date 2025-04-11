@@ -1,0 +1,601 @@
+---
+title: "Procrastination & Dementia"
+subtitle: "Using Markov models to predict transitions to dementia"
+---
+
+```{r}
+#| warning: false
+#| message: false
+#| label: set-up
+
+# Packages ---------------------------------------------------------------------
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+# Functions --------------------------------------------------------------------
+source(here::here("R/Functions.R"))
+
+# Attributes -------------------------------------------------------------------
+colour = "#212427"
+
+theme_set(
+  theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = rel(2), colour = colour, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = rel(1.75), colour = colour),
+      axis.title = element_text(size = rel(1.5), colour = colour, face = "bold"),
+      strip.text = element_text(size = rel(1), colour = colour, face = "bold"),
+      legend.title = element_text(hjust = 0.5, colour = colour, face = "bold"),
+      ))
+
+# Data -------------------------------------------------------------------------
+df <- read.csv(here::here("data/data.csv"))
+
+# Covariates -------------------------------------------------------------------
+covariates <- c(
+  "ID", "Gender", "Age", "Education_tri", "Total_dep_2016", "Total_p")
+```
+
+## Plan for today
+
+-   Linking procrastination to dementia
+-   Markov models
+    -   Using Markov models for dementia
+    -   Data analysis
+
+::: fragment
+-   **Time permitting: Goodness of fit metrics**
+:::
+
+# **Dementia & Procrastination** {background-color="#40666e"}
+
+## Dementia & Procrastination
+
+### What is dementia
+
+::: incremental
+-   Dementia is a syndrome characterized by the [progressive]{.alert} and [typically irreversible decline]{.alert} of cognitive function.
+-   It encompasses a range of conditions, including Alzheimer’s disease, vascular dementia, and Lewy body dementia.
+-   As a major public health concern, dementia impacts [millions worldwide]{.alert} [@Nichols2022], straining healthcare systems and caregivers.
+-   Given its growing prevalence, [identifying modifiable risk factors]{.alert} is essential for prevention and early intervention
+:::
+
+## Dementia & Procrastination
+
+### The Role of Mild Cognitive Impairment
+
+::: incremental
+-   MCI involves cognitive changes—such as [memory lapses or impaired decision-making]{.alert}—that exceed normal aging but don’t yet meet dementia criteria.
+-   Often a [precursor to dementia]{.alert} [@Cooper2015; @Shigemizu2020; @Tschanz2006], MCI significantly raises the risk of progression, making early detection and intervention critical
+:::
+
+## Dementia & Procrastination
+
+### Apathy: A Key Behavioral Symptom
+
+::: incremental
+-   Among the most common behavioral changes in MCI and dementia is apathy—a loss of motivation and goal-directed behavior.
+-   Research shows apathy [nearly doubles the risk of progressing to dementia]{.alert} [@vanDalen2018], highlighting its role as a potential early marker
+:::
+
+## Dementia & Procrastination
+
+### Procrastination: A Parallel Dysfunction?
+
+::: incremental
+-   Unlike apathy, procrastination involves delaying tasks despite intent, suggesting a conflict in executive function rather than pure disengagement.
+-   Both behaviors point to impairments in goal-oriented decision-making, a [core deficit in MCI and dementia]{.alert}.
+:::
+
+:::: fragment
+::: callout-tip
+## Research question
+
+Could procrastination, like apathy, signal broader cognitive and motivational decline?
+:::
+::::
+
+# **Markov Models** {background-color="#40666e"}
+
+## Markov Models
+
+### Core Concept
+
+To analyze longitudinal patterns of cognitive decline, we used a [discrete-time, first-order Markov model]{.alert}.
+
+::: incremental
+-   The model hinges on the [Markov property]{.alert}:
+    -   Let $X_t$ denote an individual’s cognitive state at time $t$, where $X_t \in S = \{1, 2, \dots, K\}$.
+    -   Transition to state $j$ at $t + 1$ depends [only]{.alert} on state $i$ at $t$.
+:::
+
+:::: fragment
+::: callout-note
+## Markov property
+
+$$P(X_{t+1} = j \vert X_t = i, X_{t-1} = i_{t-1}, \dots X_0 = i_0) = P(X_{t+1} = j \vert X_t = i)$$
+:::
+::::
+
+## Markov Models
+
+### Transition Matrices
+
+These probabilities, denoted $p_{ij}$ are called [transition probabilities]{.alert}
+
+::: panel-tabset
+### Stationary Model
+
+$$
+P = \begin{bmatrix} 
+p_{11} & \cdots & p_{1K} \\
+\vdots & \ddots & \vdots \\
+p_{K1} & \cdots & p_{KK} \\
+\end{bmatrix}
+$$
+
+### Non-Stationary Model
+
+$$
+P^{(t)} = \begin{bmatrix} 
+p_{11}^{(t)} & \cdots& p_{1K}^{(t)} \\
+\vdots & \ddots & \vdots \\
+p_{K1}^{(t)} & \cdots & p_{KK}^{(t)} \\
+\end{bmatrix}
+$$
+
+### Our Model
+
+$$
+P^{(t)} = \begin{bmatrix} 
+p_{11}^{(t)} & p_{12}^{(t)} & p_{13}^{(t)} \\
+p_{21}^{(t)} & p_{22}^{(t)} & p_{23}^{(t)} \\
+0      & 0      & 1      \\
+\end{bmatrix}
+$$
+:::
+
+-   **Rows**: Current state $(t)$
+-   **Columns**: Next state $(t + 1)$
+
+::: footer
+**Formally:** $p_{ij} = P(X_{t+1} = j \vert X_t = i)$
+:::
+
+## Markov Models
+
+### Discrete Time Models
+
+-   We capture time-varying transition probabilities using [multinomial logistic regression]{.alert}
+
+::: fragment
+1.  **Model Specification** (for $K=3$ states with state $K$ as reference):
+    -   Log-odds of transitioning to state $j$ vs. state $K$:
+:::
+
+::: fragment
+$$
+\log \left( \frac{p_{ij}^{(t)}}{p_{iK}^{(t)}} \right) = \underbrace{\alpha_j^{(t)}}_{\text{intercept}} + \underbrace{\boldsymbol{\beta}_j^{(t)^T} \boldsymbol{X}^{(t)}}_{\text{covariate effects}} \quad \text{for } j = 1, \dots, K-1
+$$
+:::
+
+# **Data Analysis** {background-color="#40666e"}
+
+## Data Analysis
+
+### Our Dataset
+
+-   Analyses were conducted using a secondary data source called the [Health and Retirement Study (HRS)]{.alert}
+-   We focused on four biennial waves of HRS data (2016 - 2022).
+
+::: fragment
+```{r}
+#| label: tbl-cog-data
+#| tbl-cap: "Cognition data from the HRS (2016 - 2022)"
+#| tbl-cap-location: bottom
+
+data <- df |>
+  extract_years(years = seq(2016, 2022, by = 2), impute = TRUE, absorbing = TRUE) |>
+  na.omit()
+
+head(data) |>
+  rename_with(~ stringr::str_replace(., "cogfunction", "")) |>
+  knitr::kable(format = "html")
+```
+:::
+
+## Data Analysis
+
+### Our Dataset
+
+```{r}
+#| fig-width: 20
+#| fig-height: 10
+#| label: fig-dementia-transitions
+#| fig-cap: "Cognitive transitions across time (with dementia as an absorbing state)"
+
+df |>
+  count_transitions(years = seq(2016, 2022, by = 2), absorbing = TRUE) |>
+  group_by(ID, Wave) |>
+  reframe(plyr::count(Classification)) |>
+  rename(Classification = x, n = freq) |>
+  plot_transitions(size = rel(4.5)) +
+  theme(
+    panel.grid = element_blank(),
+    axis.text = element_text(size = rel(1.5)),
+    legend.position = "none"
+  )
+```
+
+## Data Analysis
+
+### Our Dataset
+
+```{r}
+#| echo: true
+#| output-location: column
+#| code-line-numbers: "1-7"
+#| label: tbl-pivot-data
+#| tbl-cap: "Pivoted data"
+#| tbl-cap-location: bottom
+
+# Pivoting to long format
+data_long <- data |>
+  dplyr::inner_join(df[, covariates], by = "ID") |>
+  pivot_and_factorise() |>
+  dplyr::group_by(ID) |>
+  dplyr::mutate(Age = Age - (2022 - as.numeric(as.character(wave)))) |>
+  dplyr::ungroup()
+
+head(data_long, n = 8) |>
+  dplyr::select(ID, wave, status, Total_p) |>
+  knitr::kable(
+    format = "html", align = "c",
+    col.names = c(
+      "ID", "Wave", 
+      "Status", "Procrastination")) |>
+  kableExtra::kable_paper(
+    html_font = "Arial", 
+    font_size = 20)
+```
+
+## Data Analysis
+
+### Our Dataset
+
+```{r}
+#| echo: true
+#| output-location: column
+#| code-line-numbers: "3"
+#| label: tbl-stacked-data
+#| tbl-cap: "Data with new t - 1 column"
+#| tbl-cap-location: bottom
+
+data_stack <- data_long |>
+  dplyr::group_by(ID) |>
+  dplyr::mutate(status_prev = dplyr::lag(status), .after = status) |>
+  dplyr::filter(!is.na(Total_p), Age >= 50) |>
+  dplyr::ungroup() |>
+  dplyr::filter(wave != 2016)
+
+head(data_stack, n = 8) |>
+  dplyr::select(ID, wave, status, status_prev, Total_p) |>
+  knitr::kable(
+    format = "html", align = "c",
+    col.names = c(
+      "ID", "Wave", 
+      "Status (t)", "Status (t-1)", 
+      "Procrastination")) |>
+  kableExtra::kable_paper(
+    html_font = "Arial", 
+    font_size = 20)
+```
+
+## Data Analysis
+
+### Transition Frequencies
+
+```{r}
+#| fig-width: 12
+#| label: fig-frequencies
+#| fig-cap: "Transition frequencies between cognitive states for each time period."
+
+# Creating a table dataset
+table_data <- df |>
+  extract_years(seq(2016, 2022, by = 2), impute = TRUE, absorbing = TRUE) |>
+  rename_with(~ gsub("cogfunction", "HRS_", .)) |>
+  mutate(
+    across(c(HRS_2016:HRS_2022), ~ factor(.x, levels = c("Normal Cognition", "MCI", "Dementia")))
+  )
+
+# Creating transition frequencies ---------------------------------------------
+## These are the time periods we are interested in
+time_periods <- list(
+  c("2016", "2018"),
+  c("2018", "2020"), 
+  c("2020", "2022")
+)
+
+# Applying function
+transition_results <- purrr::map(time_periods, ~ create_transition_table(.x[1], .x[2]))
+names(transition_results) <- purrr::map_chr(time_periods, ~ paste(.x[2], .x[1], sep = "-"))
+
+### Creating one dataset
+transition_frequencies <- time_periods |>
+  create_transition_dataset(transition_results = transition_results)
+
+transition_frequencies |> 
+  tran_heat_map() +
+  theme(plot.title = element_text(size = 12),
+        axis.title = element_text(size = 10))
+```
+
+## Data Analysis
+
+### Modelling
+
+::::: panel-tabset
+### Stationary
+
+```{r}
+#| echo: true
+#| code-line-numbers: "1-4|6-9|11-14"
+
+# Model 1: Baseline model (reference: NC)
+fit_1a <- nnet::multinom(
+  status ~ Gender + Age + Education_tri + Total_dep_2016,
+  family = multinomial, data = data_stack, trace = FALSE)
+
+# Model 2: With procrastination (reference: NC)
+fit_2a <- nnet::multinom(
+  status ~ Gender + Age + Education_tri + Total_dep_2016 + Total_p,
+  family = multinomial, data = data_stack, trace = FALSE)
+
+# Model 3: Full model with previous state (reference NC)
+fit_3a <- nnet::multinom(
+  status ~ Gender + Age + Education_tri + Total_dep_2016 + Total_p + status_prev, 
+  family = multinomial, data = data_stack, trace = FALSE)
+```
+
+```{r}
+fit_3b <- nnet::multinom(
+  status ~ Gender + Age + Education_tri + Total_dep_2016 + Total_p + status_prev, 
+  family = multinomial, data = data_stack |> mutate(status = relevel(status, ref = 2)), 
+  trace = FALSE)
+```
+
+### Non Stationary
+
+```{r}
+#| echo: true
+#| code-line-numbers: "1-4|6-9|11-14"
+
+# Model 4: Additive time effects
+fit_4a <- nnet::multinom(
+  status ~ Gender + Age + Education_tri + Total_dep_2016 + Total_p + status_prev + wave, 
+  family = multinomial, data = data_stack, trace = FALSE)
+
+# Model 5: State-specific time effects
+fit_5a <- nnet::multinom(
+  status ~ Gender + Age + Education_tri + Total_dep_2016 + Total_p + (status_prev * wave), 
+  family = multinomial, data = data_stack, trace = FALSE)
+
+# Model 6: Full time interactions
+fit_6a <- nnet::multinom(
+  status ~ (Gender + Age + Education_tri + Total_dep_2016 + Total_p + status_prev) * wave, 
+  family = multinomial, data = data_stack, trace = FALSE)
+```
+
+### Comparison
+
+::: {style="font-size: 75%; text-align: center;"}
+@tbl-stationary-comparison & @tbl-non-stationary-comparison present [likelihood ratio tests]{.alert} for each model
+:::
+
+```{r}
+#| label: tbl-stationary-comparison
+#| tbl-cap: "Likelihood ratio test for stationary models"
+#| tbl-cap-location: bottom
+
+anova(fit_1a, fit_2a, fit_3a) |>
+  mutate(
+    Model = c("Baseline", "Procrastination", "Procrastination + Previous Status"),
+    `Resid. Dev`= round(`Resid. Dev`, digits = 3),
+    `LR stat.` = round(`LR stat.`, digits = 3),
+    `Pr(Chi)` = round(`Pr(Chi)`, digits = 3)
+    ) |>
+  knitr::kable(
+    format = "html", align = "c") |>
+  kableExtra::kable_paper(
+    html_font = "Arial", 
+    font_size = 20)
+```
+
+::: fragment
+```{r}
+#| label: tbl-non-stationary-comparison
+#| tbl-cap: "Likelihood ratio test for non-stationary models"
+#| tbl-cap-location: bottom
+
+anova(fit_3a, fit_4a, fit_5a, fit_6a) |>
+  mutate(
+    Model = c("Stationary", "Additive", "State-Time Interactions", "Full Interactions"),
+    `Resid. Dev` = round(`Resid. Dev`, digits = 3),
+    `LR stat.` = round(`LR stat.`, digits = 3),
+    `Pr(Chi)` = round(`Pr(Chi)`, digits = 3)
+    ) |>
+    knitr::kable(
+    format = "html", align = "c") |>
+  kableExtra::kable_paper(
+    html_font = "Arial", 
+    font_size = 20)
+```
+:::
+:::::
+
+::: footer
+$\text{LRT} = -2 \times \ell_{\text{reduced}} - \ell_{\text{full}}$
+:::
+
+## Data Analysis
+
+### Visualisation
+
+::: panel-tabset
+### Odds Ratios
+
+```{r}
+#| fig-width: 12
+#| label: fig-odds-ratio
+#| fig-cap: "Estimated odds ratios for the stationary model."
+
+stationary_results <- rbind(tidy_output(fit_3a), tidy_output(fit_3b)) |>
+  rename(transition = y.level) |>
+  mutate(
+    # Transforming to odds ratios
+    estimate = exp(estimate),
+    conf.low = exp(conf.low),
+    conf.high = exp(conf.high),
+    
+    # Mutating to factors
+    transition = factor(
+      transition, 
+      levels = c("NC - MCI", "MCI - NC", 
+                 "NC - Dementia", "MCI - Dementia")),
+    term = factor(
+      term, 
+      levels = c("Being female", "Age", "High school degree vs. No education",
+                 "Further education vs. No education", "Depression Scores (2016)",
+                 "Procrastination (2020)", "Previous state: MCI", 
+                 "Previous state: Dementia")),
+    
+    # Creating a colour code
+    colour = case_when(
+      estimate > 1 & p.value < 0.05 ~ "Positive",
+      estimate < 1 & p.value < 0.05 ~ "Negative",
+      TRUE ~ "NS"),
+    
+    colour = factor(colour, levels = c("Positive", "Negative", "NS"))
+    )
+
+fig_4 <- stationary_results |>
+  filter(!term %in% c("Previous state: MCI", "Previous state: Dementia")) |>
+  ggplot(aes(x = estimate, y = transition, colour = colour)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "gray50") +
+  ggstance::geom_pointrangeh(
+    aes(xmin = conf.low, xmax = conf.high),
+    position = ggstance::position_dodgev(height = 0.5),
+    size = 1.25,
+    fatten = 3) +
+  scale_colour_manual(values = c(
+    "Positive" = "#0072B2", 
+    "Negative" = "#E69F00", 
+    "NS"       = "#B2BEB5")) +
+  labs(title = "Odds ratios - Stationary model",
+       x = "Odds Ratio", y = "Transition") +
+  guides(colour = "none") +
+  facet_wrap(~ term, scales = "free_x") +
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.title = element_text(size = 12, face = "bold"),
+    strip.text = element_text(size = 10, face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank())
+
+fig_4
+```
+
+### Predictions
+
+```{r}
+#| fig-width: 12
+#| label: fig-model-predictions
+#| fig-cap: "Predicted transition probabilities from the stationary model."
+
+pred_data <- expand.grid(
+  Gender = factor(0),
+  Age = mean(data_stack$Age),
+  Education_tri = factor(0),
+  Total_dep_2016 = mean(data_stack$Total_dep_2016),
+  status_prev = levels(data_stack$status_prev),
+  Total_p = seq(0, 60, length = 200))
+
+## Plotting predictions
+fig_5 <- pred_data |>
+  modelr::add_predictions(model = fit_3a, var = "pred", type = "probs") |>
+  tidy_predictions() |>
+  plot_predictions_stationary(variable = Total_p, x_axis = "Total Procrastination") +
+  theme(plot.title = element_text(size = 14),
+        axis.title = element_text(size = 12))
+
+fig_5
+```
+
+### Estimated Matrix
+
+```{r}
+#| fig-width: 12
+#| label: fig-matrix-comparison
+#| fig-cap: "Estimated transition matrix."
+
+# Get all unique states
+names <- c("Normal Cognition", "MCI", "Dementia")
+states <- sort(unique(data_stack$status))
+n_states <- length(states)
+
+# Create empty transition matrix
+transition_matrix_estimated <- matrix(
+  0, nrow = n_states, ncol = n_states,
+  dimnames = list(paste("From", names), paste("To", names))
+  )
+
+# Getting estimated probabilities
+estimated_probs <- expand.grid(
+  Gender = factor(0),
+  Age = mean(data_stack$Age),
+  Education_tri = factor(0),
+  Total_dep_2016 = mean(data_stack$Total_dep_2016),
+  Total_p = mean(data_stack$Total_p),
+  status_prev = states) |>
+  modelr::add_predictions(model = fit_3a, var = "pred", type = "probs")
+
+# Filling in matrix
+for(i in 1:n_states) {
+  transition_matrix_estimated[i, ] <- estimated_probs$pred[i, ]
+}
+
+fig_6 <- transition_matrix_estimated |>
+  reshape_matrix() |>
+  plot_transition_matrix(observed = FALSE) +
+  theme(plot.title = element_text(size = 14),
+        plot.subtitle = element_text(size = 12),
+        axis.title = element_text(size = 12))
+
+fig_6
+```
+:::
+
+# **Conclusion** {background-color="#40666e"}
+
+## Conclusion
+### Wrapping up
+
+-   Preliminary results suggest that procrastination is associated with cognitive decline.
+-   Older adults with higher levels of procrastination have:
+    -   [An increased probability of transitioning to MCI.]{.alert}
+    -   [A decreased probability of transitioning back to NC]{.alert}
+-   Procrastination is a complex behavior that may signal [broader cognitive and motivational decline]{.alert}.
+
+## References
+
+::: {#refs}
+:::
+
+## Wrapping up
+### Thank you
+
+::: {style="text-align:center; font-size:1.5em;"}
+![These slides were built with <br> [{{< fa brands github title="GitHub octocat logo" >}}](https://c-monaghan.github.io/), [{{< fa brands r-project title="R Project" >}}](https://www.r-project.org/about.html){target="_blank"}, and [Quarto](https://quarto.org/){target="_blank"}](./files/images/QR_Code.svg){fig-align="center" width="450" height="450"}
+:::
