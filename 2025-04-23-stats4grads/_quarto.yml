@@ -20,7 +20,7 @@ format:
       data-background-size: 20%
       data-background-position: 2% 98%
     multiplex: true
-    embed-resources: true
+    self-contained: true
 
 bibliography: ./files/references.bib
 csl: ./files/apa-sup.csl
