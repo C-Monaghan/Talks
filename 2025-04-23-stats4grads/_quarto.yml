@@ -1,5 +1,5 @@
 project:
-  output-dir: docs
+  output-dir: ../docs
   
   preview: 
     port: 6532
