@@ -19,7 +19,10 @@ format:
       data-background-image: ./files/images/RI_logo.svg
       data-background-size: 20%
       data-background-position: 2% 98%
-    multiplex: true
+    multiplex: 
+      url: "https://reveal-multiplex.glitch.me/"
+      id: "79b0448ae9a23d87"
+      secret: "17444748248867377990"
     self-contained: true
 
 bibliography: ./files/references.bib
