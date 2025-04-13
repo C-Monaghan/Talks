@@ -43,13 +43,15 @@ covariates <- c(
 
 ## Plan for today
 
--   Linking procrastination to dementia
+::: incremental
+-   Dementia
+    -   Overview
+    -   Determinants
+    -   Linking procrastination
 -   Markov models
     -   Using Markov models for dementia
-    -   Data analysis
-
-::: fragment
--   **Time permitting: Goodness of fit metrics**
+    -   [Preliminary]{.alert} data analysis
+-   Conclusions
 :::
 
 # **Dementia & Procrastination** {background-color="#40666e"}
@@ -62,7 +64,11 @@ covariates <- c(
 -   Dementia is a syndrome characterized by the [progressive]{.alert} and [typically irreversible decline]{.alert} of cognitive function.
 -   It encompasses a range of conditions, including Alzheimer’s disease, vascular dementia, and Lewy body dementia.
 -   As a major public health concern, dementia impacts [millions worldwide]{.alert} [@Nichols2022], straining healthcare systems and caregivers.
--   Given its growing prevalence, [identifying modifiable risk factors]{.alert} is essential for prevention and early intervention
+-   Given its growing prevalence, [identifying modifiable risk factors]{.alert} is essential for prevention and early intervention.
+:::
+
+::: notes
+-   Given that there is currently no cure for dementia, identifying modifiable risk factors is essential for prevention and early intervention.
 :::
 
 ## Dementia & Procrastination
@@ -74,12 +80,21 @@ covariates <- c(
 -   Often a [precursor to dementia]{.alert} [@Cooper2015; @Shigemizu2020; @Tschanz2006], MCI significantly raises the risk of progression, making early detection and intervention critical
 :::
 
+::: notes
+**Signs of MCI:**
+
+-   Forgetting things more often.
+-   Missing appointments or social events.
+-   Finding it hard to make decisions, finish a task or follow instructions.
+-   Trouble finding their way around places they know well.
+:::
+
 ## Dementia & Procrastination
 
 ### Apathy: A Key Behavioral Symptom
 
 ::: incremental
--   Among the most common behavioral changes in MCI and dementia is apathy—a loss of motivation and goal-directed behavior.
+-   Among the most common behavioral changes in MCI and dementia is [apathy]{.alert} — a loss of motivation and goal-directed behavior.
 -   Research shows apathy [nearly doubles the risk of progressing to dementia]{.alert} [@vanDalen2018], highlighting its role as a potential early marker
 :::
 
@@ -96,7 +111,7 @@ covariates <- c(
 ::: callout-tip
 ## Research question
 
-Could procrastination, like apathy, signal broader cognitive and motivational decline?
+**Could procrastination, like apathy, signal broader cognitive and motivational decline?**
 :::
 ::::
 
@@ -122,11 +137,15 @@ $$P(X_{t+1} = j \vert X_t = i, X_{t-1} = i_{t-1}, \dots X_0 = i_0) = P(X_{t+1} =
 :::
 ::::
 
+::: {.notes}
+- Markov models are **memoryless** and rely on the Markov property.
+:::
+
 ## Markov Models
 
 ### Transition Matrices
 
-These probabilities, denoted $p_{ij}$ are called [transition probabilities]{.alert}
+These probabilities, denoted $p_{ij}$ are called [transition probabilities]{.alert}.
 
 ::: panel-tabset
 ### Stationary Model
@@ -167,11 +186,17 @@ $$
 **Formally:** $p_{ij} = P(X_{t+1} = j \vert X_t = i)$
 :::
 
+::: {.notes}
+- Dementia is an absorbing state.
+- So we use a model that accommodates this.
+:::
+
+
 ## Markov Models
 
 ### Discrete Time Models
 
--   We capture time-varying transition probabilities using [multinomial logistic regression]{.alert}
+-   We capture time-varying transition probabilities using [multinomial logistic regression]{.alert}.
 
 ::: fragment
 1.  **Model Specification** (for $K=3$ states with state $K$ as reference):
@@ -184,13 +209,17 @@ $$
 $$
 :::
 
+::: {.notes}
+- $X^{(t)}$ can contain both time variant and time invariant covariates.
+:::
+
 # **Data Analysis** {background-color="#40666e"}
 
 ## Data Analysis
 
 ### Our Dataset
 
--   Analyses were conducted using a secondary data source called the [Health and Retirement Study (HRS)]{.alert}
+-   Analyses were conducted using a secondary data source called the [Health and Retirement Study (HRS)]{.alert}[@Fisher2018; @Langa2023].
 -   We focused on four biennial waves of HRS data (2016 - 2022).
 
 ::: fragment
@@ -207,6 +236,10 @@ head(data) |>
   rename_with(~ stringr::str_replace(., "cogfunction", "")) |>
   knitr::kable(format = "html")
 ```
+:::
+
+::: {.notes}
+- The HRS is a longitudinal study of health, economic, and social factors among older adults (typically 50+) in the US.
 :::
 
 ## Data Analysis
@@ -584,6 +617,7 @@ fig_6
 # **Conclusion** {background-color="#40666e"}
 
 ## Conclusion
+
 ### Wrapping up
 
 -   Preliminary results suggest that procrastination is associated with cognitive decline.
@@ -598,6 +632,7 @@ fig_6
 :::
 
 ## Wrapping up
+
 ### Thank you
 
 ::: {style="text-align:center; font-size:1.5em;"}
