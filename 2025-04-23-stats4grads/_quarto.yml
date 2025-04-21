@@ -24,7 +24,7 @@ format:
       id: "79b0448ae9a23d87"
       secret: "17444748248867377990"
     self-contained: true
-
+    
 bibliography: ./files/references.bib
 csl: ./files/apa-sup.csl
 citations-hover: true
