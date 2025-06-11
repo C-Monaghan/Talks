@@ -1,0 +1,389 @@
+---
+title: "Procrastination and Cognitive Decline"
+subtitle: "Using Markov models to predict transitions to dementia"
+---
+
+```{r}
+#| label: set-up
+#| warning: false
+#| message: false
+
+# Packages ---------------------------------------------------------------------
+pacman::p_load(
+  dplyr,
+  tidyr,
+  ggplot2,
+  ggalluvial,
+  patchwork
+)
+
+# Functions --------------------------------------------------------------------
+functions <- list.files(path = "R/", pattern = "\\.R$", full.names = TRUE)
+
+purrr::walk(functions, source)
+
+# Theme ------------------------------------------------------------------------
+# Attributes
+colour = "#212427"
+
+theme_set(
+  theme_minimal() +
+    theme(
+      plot.title = element_text(
+        hjust = 0.5,
+        size = rel(2.5),
+        colour = colour,
+        face = "bold"
+      ),
+      plot.subtitle = element_text(
+        hjust = 0.5,
+        size = rel(1.75),
+        colour = colour
+      ),
+      axis.title = element_text(
+        size = rel(1.5),
+        colour = colour,
+        face = "bold"
+      ),
+      strip.text = element_text(
+        size = rel(1),
+        colour = colour,
+        face = "bold"
+      ),
+      legend.title = element_text(
+        hjust = 0.5,
+        colour = colour,
+        face = "bold"
+      ),
+    )
+)
+
+# Data -------------------------------------------------------------------------
+data <- readRDS(here::here("data/data.RDS")) |> tibble::as_tibble()
+
+# Making a t-1 column
+data_stack <- data |>
+  group_by(ID) |>
+  mutate(status_prev = lag(status), .after = status) |>
+  filter(wave != 2016)
+```
+
+## Plan for today
+
+::: incremental
+-   [Dementia]{.alert}
+    -   Overview
+    -   Determinants
+    -   Linking procrastination
+-   [Markov models]{.alert}
+    -   Using Markov models for dementia
+    -   Data analysis
+-   [Conclusions]{.alert}
+:::
+
+# **Dementia & Procrastination** {background-color="#40666e"}
+
+## Dementia & Procrastination
+
+### What is dementia
+
+::: incremental
+-   Syndrome of [progressive, usually irreversible]{.alert} cognitive decline
+-   Includes Alzheimer’s, vascular, Lewy body types
+-   Affects millions worldwide[@Nichols2022]
+-   Focus on [modifiable risks]{.alert} for prevention
+:::
+
+::: notes
+-   Given that there is currently no cure for dementia, identifying modifiable risk factors is essential for prevention and early intervention.
+:::
+
+## Dementia & Procrastination
+
+### The Role of Mild Cognitive Impairment
+
+::: incremental
+-   Cognitive changes beyond normal aging - memory lapses, poor decisions
+-   Often [precedes]{.alert} dementia[@Cooper2015; @Shigemizu2020; @Tschanz2006]
+-   [Early detection crucial]{.alert}
+:::
+
+::: notes
+**Signs of MCI:**
+
+-   Forgetting things more often.
+-   Missing appointments or social events.
+-   Finding it hard to make decisions, finish a task or follow instructions.
+-   Trouble finding their way around places they know well.
+:::
+
+## Dementia & Procrastination
+
+### Apathy vs. Procrastination
+
+::: incremental
+-   [Apathy]{.alert}
+    -   Loss of motivation
+    -   Nearly doubles dementia risk[@vanDalen2018]
+-   [Procrastination]{.alert}
+    -   Intentional delay despite intent
+    -   Signals executive function breakdown
+:::
+
+:::: {.fragment .fade-up}
+::: callout-tip
+## Research question
+
+**Could procrastination signal broader cognitive and motivational decline?**
+:::
+::::
+
+::: notes
+Both behaviours reflect impaired goal-directed behavior
+:::
+
+# **Markov Models** {background-color="#40666e"}
+
+## Markov Models
+
+### Core Concept
+
+To analyze longitudinal patterns of cognitive decline, we used a [discrete-time, first-order Markov model]{.alert}.
+
+::: incremental
+-   The model hinges on the [Markov property]{.alert}:
+    -   Let $X_t$ denote an individual’s cognitive state at time $t$, where $X_t \in S = \{1, 2, \dots, K\}$.
+    -   Transition to state $j$ at $t + 1$ depends [only]{.alert} on state $i$ at $t$.
+:::
+
+:::: {.fragment .fade-up}
+::: callout-note
+## Markov property
+
+$$P(X_{t+1} = j \vert X_t = i, X_{t-1} = i_{t-1}, \dots X_0 = i_0) = P(X_{t+1} = j \vert X_t = i)$$
+:::
+::::
+
+::: notes
+-   Markov models are **memoryless** and rely on the Markov property.
+:::
+
+## Markov Models
+
+### Transition Matrices
+
+These probabilities, denoted $p_{ij}$ are called [transition probabilities]{.alert}.
+
+$$
+P = \begin{bmatrix} 
+p_{11} & \cdots & p_{1K} \\
+\vdots & \ddots & \vdots \\
+p_{K1} & \cdots & p_{KK} \\
+\end{bmatrix}
+$$
+
+::: footer
+**Formally:** $p_{ij} = P(X_{t+1} = j \vert X_t = i)$
+:::
+
+## Markov Models
+
+### Discrete Time Models
+
+-   We capture time-varying transition probabilities using [multinomial logistic regression]{.alert}.
+
+::: fragment
+1.  **Model Specification** (for $K=3$ states with state $K$ as reference):
+    -   Log-odds of transitioning to state $j$ vs. state $K$:
+:::
+
+::: fragment
+
+$$
+log \left( \frac{P(Y = j \vert x)}{P(Y = k \vert x)} \right) = \underbrace{\alpha}_{\text{intercept}} + \underbrace{\beta_j^T \:X}_{\text{covariate effects}} \qquad \text{for } j = 1, \dots K-1
+$$
+:::
+
+::: notes
+-   $X^{(t)}$ can contain both time variant and time invariant covariates.
+:::
+
+# **Data Analysis** {background-color="#40666e"}
+
+## Data Analysis
+
+### Our Dataset
+
+```{r}
+#| label: fig-dementia-transitions
+#| fig-height: 15
+#| fig-width: 25
+#| fig-cap: "Cognitive transitions across time"
+
+data |>
+  dplyr::mutate(
+    status = dplyr::case_when(
+    status == "1" ~ "Normal Cognition", 
+    status == "2" ~ "MCI",
+    status == "3" ~ "Dementia"),
+    status = factor(status, levels = c("Normal Cognition", "MCI", "Dementia"))
+    ) |>
+  dplyr::group_by(ID, wave) |>
+  dplyr::reframe(plyr::count(status)) |>
+  dplyr::rename(classification = x, n = freq) |>
+  ggplot(aes(
+    x = wave, y = n, stratum = classification,
+    fill = classification, alluvium = ID)) +
+  ggalluvial::geom_stratum(alpha = 0.5, width = 0.5) +
+  ggalluvial::geom_flow(width = 0.5) +
+  geom_text(
+    stat = "stratum", aes(label = stringr::str_wrap(classification, width = 10)),
+    hjust = 0.5, vjust = 0.5, size = rel(6)) +
+  labs(title = "Cognitive transitions across time", x = "", y = "Frequency") +
+  scale_fill_viridis_d(direction = -1) +
+  theme(
+    plot.background = element_blank(),
+    axis.title = element_text(size = rel(2.5)),
+    axis.text = element_text(size = rel(2)),
+    legend.position = "none")
+```
+
+
+## Data Analysis
+
+### Modelling
+
+```{r}
+#| label: modelling
+#| echo: true
+#| output-location: fragment
+#| code-line-numbers: "1-8"
+#| warning: false
+#| message: false
+
+fit_a <- nnet::multinom(
+  formula = status ~ Gender + Education_tri + Depression + (Age * Total_p) + status_prev, 
+  data = data_stack, family = multinomial, trace = FALSE)
+
+fit_b <- nnet::multinom(
+  formula = status ~ Gender + Education_tri + Depression + (Age * Total_p) + status_prev, 
+  data = data_stack |> mutate(status = relevel(status, ref = "2")), 
+  family = multinomial, trace = FALSE)
+
+fit_results <- rbind(tidy_output(fit = fit_a), tidy_output(fit = fit_b))
+
+fit_results |> head() |> output_model()
+
+```
+
+
+## Data Analysis
+
+### Odds Ratios
+
+```{r}
+#| label: fig-model-summary
+#| fig-height: 6
+#| fig-cap: "Odds Ratio from model"
+
+fit_results |>
+  filter(!term %in% c("Previous state: MCI", "Previous state: Dementia")) |>
+  plot_model()
+```
+
+## Data Analysis
+
+### Predictions
+
+```{r}
+#| label: fig-age-predictions
+#| fig-cap: "Predicted transition probabilities for different age cohorts"
+
+# Create predictions with age info
+age_cohots <- expand.grid(
+  Gender = factor(0),
+  Age = c(62:97),
+  Education_tri = factor(0),
+  Depression = mean(data_stack$Depression, na.rm = TRUE),
+  status_prev = levels(data_stack$status_prev),
+  Total_p = seq(0, 60, length = 200)) |>
+  modelr::add_predictions(model = fit_a, var = "pred", type = "probs") |>
+  tidy_predictions() |>
+  filter(status_prev %in% c("Normal Cognition", "MCI") &
+         status %in%  c("Normal Cognition", "MCI")) |>
+  mutate(label = case_when(
+    Age %in% c(70, 80, 90) ~ as.character(Age), 
+    TRUE ~ "Other"
+  ))
+
+# Identifying right most point for each label point
+label_data <- age_cohots |>
+  filter(Age %in% c(70, 80, 90)) |>
+  group_by(status_prev, Age) |>
+  filter(Total_p == max(Total_p)) |>
+  ungroup()
+
+# Plotting ---------------------------------------------------------------------
+ggplot(data = age_cohots, aes(x = Total_p, y = prob, 
+                              group = interaction(Age, status_prev, status),
+                              colour = label)) +
+  geom_line(aes(linewidth = label)) + 
+  ggrepel::geom_text_repel(
+    data = label_data,
+    aes(label = paste0("Age ", Age), colour = as.character(Age)),
+    direction = "y", nudge_x = 4, hjust = 0,
+    segment.size = 0.5, segment.colour = "grey50",
+    size = 3, show.legend = FALSE) +
+  scale_x_continuous(
+    breaks = seq(0, 60, by = 10),
+    sec.axis = sec_axis( ~., name = "Previous State", breaks = NULL, labels = NULL)) +
+  scale_y_continuous(sec.axis = sec_axis( ~ ., name = "Current State", breaks = NULL, labels = NULL)) +
+  scale_colour_manual(values = c(
+    "70"    = "#E69F00", 
+    "80"    = "#56B4E9", 
+    "90"    = "#009E73",
+    "Other" = "grey80")) +
+  scale_linewidth_manual(values = c(
+    "70"    = 1.5, 
+    "80"    = 1.5, 
+    "90"    = 1.5,
+    "Other" = 0.5)) +
+  labs(
+    title = "Predicted transition probabilities",
+    x = "Procrastination", y = "Probability", 
+    caption = "*Note:* Each curve represents a different age profile, ranging from the minimum (62 years) to the maximum (97 years) of the dataset. <br> Specific ages of interest (70, 80, and 90) are highlighted.",
+    colour = NULL) +
+  facet_grid(status ~ status_prev) +
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.caption = ggtext::element_markdown(hjust = 0, size = 10),
+    axis.title = element_text(size = 12, face = "bold"),
+    strip.text = element_text(size = 10, face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.position = "none")
+```
+
+
+## Conclusions
+
+::: incremental
+-   Preliminary evidence that procrastination may function as an [early behavioural marker]{.alert} of cognitive decline, particularly in older age 
+-   As a modifiable and measurable construct, procrastination holds promise as a target for [early detection and preventative intervention]{.alert}
+:::
+
+## References
+
+::: {#refs}
+:::
+
+## Wrapping up
+
+### Thank you
+
+::: {style="text-align:center; font-size:1.5em;"}
+![These slides were built with <br> [{{< fa brands github title="GitHub octocat logo" >}}](https://c-monaghan.github.io/), [{{< fa brands r-project title="R Project" >}}](https://www.r-project.org/about.html){target="_blank"}, and [Quarto](https://quarto.org/){target="_blank"}](./files/images/QR_Code.svg){fig-align="center" width="450" height="450"}
+:::
+

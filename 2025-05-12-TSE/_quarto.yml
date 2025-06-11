@@ -1,0 +1,31 @@
+project:
+  output-dir: ../docs
+  
+  preview: 
+    port: 6532
+    browser: true
+    watch-inputs: true
+    navigate: true
+  
+author:
+  - name: Cormac Monaghan
+    orcid: 0000-0001-9012-3060
+    email: cormac.monaghan@mu.ie
+    affiliations: Hamilton Institute, Maynooth University
+
+format: 
+  clean-revealjs:
+    title-slide-attributes: 
+      data-background-image: ./files/images/RI_logo.svg
+      data-background-size: 20%
+      data-background-position: 2% 98%
+    multiplex:
+      url: "https://reveal-multiplex.glitch.me/"
+      id: "17496422924676683569"
+      secret: "a6162b4572806d32"
+    self-contained: true
+    
+bibliography: ./files/references.bib
+csl: ./files/apa-sup.csl
+citations-hover: true
+citeproc: true
